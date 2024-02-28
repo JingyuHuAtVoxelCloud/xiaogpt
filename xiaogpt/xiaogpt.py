@@ -166,7 +166,7 @@ class MiGPT:
         record["time"] = int(time.time() * 1000)
         # Convert the updated data_dict back to a string and update the data['data'] value
         data["data"] = json.dumps(data_dict)
-        await asyncio.sleep(0)
+        await asyncio.sleep(1)
 
         return data
 
@@ -177,7 +177,7 @@ class MiGPT:
         return (
             self.in_conversation
             and not query.startswith(WAKEUP_KEYWORD)
-            or query.startswith(tuple(self.config.keyword))
+            or query.startswith(tuple(self.config.keyword)) or True
         )
 
     def need_change_prompt(self, record):
@@ -269,7 +269,7 @@ class MiGPT:
         while True:
             if not await self.get_if_xiaoai_is_playing():
                 break
-            await asyncio.sleep(0)
+            await asyncio.sleep(1)
 
     @staticmethod
     def _normalize(message: str) -> str:
@@ -390,8 +390,8 @@ class MiGPT:
                 await self.stop_if_xiaoai_is_playing()
             else:
                 # waiting for xiaoai speaker done
-                await asyncio.sleep(0)
-            await self.do_tts(f"正在问{self.chatbot.name}请耐心等待")
+                await asyncio.sleep(8)
+            await self.do_tts(f"正在思考中，请耐心等待")
             try:
                 print(
                     "以下是小爱的回答: ",

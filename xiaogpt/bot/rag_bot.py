@@ -30,7 +30,7 @@ from llama_index.core import (
 
 @dataclasses.dataclass
 class RagBot(ChatHistoryMixin, BaseBot):
-    name: ClassVar[str] = "GPT4 RAG"
+    name: ClassVar[str] = "RAG"
     default_options: ClassVar[dict[str, str]] = {"model": "gpt4-1106-prevision"}
     openai_key: str
     api_base: str | None = None

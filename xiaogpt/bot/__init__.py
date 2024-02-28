@@ -10,6 +10,7 @@ from xiaogpt.bot.gemini_bot import GeminiBot
 from xiaogpt.bot.qwen_bot import QwenBot
 from xiaogpt.bot.langchain_bot import LangChainBot
 from xiaogpt.bot.light_bot import LightBot
+from xiaogpt.bot.rag_bot import RagBot
 from xiaogpt.config import Config
 
 BOTS: dict[str, type[BaseBot]] = {
@@ -21,7 +22,8 @@ BOTS: dict[str, type[BaseBot]] = {
     "gemini": GeminiBot,
     "qwen": QwenBot,
     "langchain": LangChainBot,
-    "GPT4": LightBot
+    "GPT4": LightBot,
+    "RAG": RagBot
 }
 
 
@@ -42,5 +44,6 @@ __all__ = [
     "QwenBot",
     "get_bot",
     "LangChainBot",
-    "GPT4"
+    "GPT4",
+    "RAG",
 ]
