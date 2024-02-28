@@ -4,6 +4,7 @@ import os
 import dataclasses
 from typing import TYPE_CHECKING, ClassVar
 
+import time
 import httpx
 from rich import print
 
@@ -36,7 +37,8 @@ class RagBot(ChatHistoryMixin, BaseBot):
     proxy: str | None = None
     history: list[tuple[str, str]] = dataclasses.field(default_factory=list, init=False)
 
-    def _make_query_engine(self, sess: httpx.AsyncClient) -> openai.AsyncOpenAI:
+
+    def _make_query_engine(self, sess: httpx.AsyncClient, stream=False):
 
         llm = AzureOpenAI(
             engine="gpt4-1106-prevision",
@@ -54,10 +56,10 @@ class RagBot(ChatHistoryMixin, BaseBot):
         Settings.embed_model = embed_model
         Settings.llm = llm
         # check if storage already exists
-        PERSIST_DIR = "/home/jyhu/xiaogpt/rag/storage"
+        PERSIST_DIR = "xiaogpt/rag/storage"
         if not os.path.exists(PERSIST_DIR):
             # load the documents and create the index
-            documents = SimpleDirectoryReader("/home/jyhu/xiaogpt/rag/data").load_data()
+            documents = SimpleDirectoryReader("xiaogpt/rag/data").load_data()
             index = VectorStoreIndex.from_documents(documents)
             # store it for later
             index.storage_context.persist(persist_dir=PERSIST_DIR)
@@ -90,7 +92,8 @@ class RagBot(ChatHistoryMixin, BaseBot):
         query_engine = index.as_query_engine(
             text_qa_template=text_qa_template, 
             refine_template=refine_template,
-            llm=llm
+            llm=llm,
+            streaming=stream
             )
         return query_engine
         
@@ -103,9 +106,9 @@ class RagBot(ChatHistoryMixin, BaseBot):
             proxy=config.proxy
         )
 
-    async def ask(self, _query, **options):
+    async def ask(self, query, **options):
         ms = self.get_messages()
-        ms.append({"role": "user", "content": f"{_query}"})
+        ms.append({"role": "user", "content": f"{query}"})
         kwargs = {**self.default_options, **options}
         httpx_kwargs = {}
         if self.proxy:
@@ -113,12 +116,13 @@ class RagBot(ChatHistoryMixin, BaseBot):
         async with httpx.AsyncClient(trust_env=True, **httpx_kwargs) as sess:
             query_engine = self._make_query_engine(sess)
             try:
-                completion = query_engine.query(_query)
+                completion = query_engine.query(query)
             except Exception as e:
                 print(str(e))
                 return ""
             message = completion.response
-            self.add_message(_query, message)
+            # print(completion.source_nodes[0].get_text())
+            self.add_message(query, message)
             print(message)
             return message
 
@@ -130,24 +134,22 @@ class RagBot(ChatHistoryMixin, BaseBot):
         if self.proxy:
             httpx_kwargs["proxies"] = self.proxy
         async with httpx.AsyncClient(trust_env=True, **httpx_kwargs) as sess:
-            client = self._make_openai_client(sess)
+            query_engine = self._make_query_engine(sess, stream=True)
             try:
-                completion = await client.chat.completions.create(
-                    messages=ms, stream=True, **kwargs
-                )
+                completion = query_engine.query(query)
             except Exception as e:
                 print(str(e))
                 return
 
             async def text_gen():
                 async for event in completion:
-                    if not event.choices:
+                    if not event.response:
                         continue
-                    chunk_message = event.choices[0].delta
-                    if chunk_message.content is None:
+                    chunk_message = event.response
+                    if chunk_message.response is None:
                         continue
-                    print(chunk_message.content, end="")
-                    yield chunk_message.content
+                    print(chunk_message.response, end="")
+                    yield chunk_message.response
 
             message = ""
             try:
@@ -182,8 +184,10 @@ async def main():
     bot = RagBot.from_config(config)
     # 询问问题
     response = await bot.ask("什么是光疗？")
+    
     print(response)
 
 # 运行异步 main 函数
 if __name__ == "__main__":
     asyncio.run(main())
+    
