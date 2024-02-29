@@ -61,6 +61,8 @@ class MiGPT:
                     "Listening new message, timestamp: %s", self.last_timestamp
                 )
                 new_record = await self.get_latest_ask_from_xiaoai(session)
+                # await self.set_volume_for_xiaoai(-100)
+                await self.mute_xiaoai()
                 start = time.perf_counter()
                 self.log.debug("Polling_event, timestamp: %s", self.last_timestamp)
                 await self.polling_event.wait()
@@ -335,6 +337,12 @@ class MiGPT:
             # stop it
             await self.mina_service.player_pause(self.device_id)
 
+    async def mute_xiaoai(self):
+        await self.mina_service.player_pause(self.device_id)
+
+    async def set_volume_for_xiaoai(self, volume: int=30):
+        await self.mina_service.player_set_volume(self.device_id, volume)
+
     async def wakeup_xiaoai(self):
         return await miio_command(
             self.miio_service,
@@ -344,6 +352,8 @@ class MiGPT:
 
     async def run_forever(self):
         await self.init_all_data(self.mi_session)
+        # await self.set_volume_for_xiaoai(-100)
+        # await self.mute_xiaoai()
         task = asyncio.create_task(self.poll_latest_ask())
         assert task is not None  # to keep the reference to task, do not remove this
         print(
@@ -352,7 +362,11 @@ class MiGPT:
         print(f"或用[green]{self.config.start_conversation}[/]开始持续对话")
         while True:
             self.polling_event.set()
+            # await self.mute_xiaoai()
+            # await self.set_volume_for_xiaoai(-100)
             new_record = await self.last_record.get()
+            # await self.set_volume_for_xiaoai(40)
+            # await self.mute_xiaoai()
             self.polling_event.clear()  # stop polling when processing the question
             query = new_record.get("query", "").strip()
 
@@ -362,12 +376,16 @@ class MiGPT:
                     self.in_conversation = True
                     await self.wakeup_xiaoai()
                 await self.stop_if_xiaoai_is_playing()
+                # await self.set_volume_for_xiaoai(-100)
+                # await self.mute_xiaoai()
                 continue
             elif query == self.config.end_conversation:
                 if self.in_conversation:
                     print("结束对话")
                     self.in_conversation = False
                 await self.stop_if_xiaoai_is_playing()
+                # await self.set_volume_for_xiaoai(-100)
+                # await self.mute_xiaoai()
                 continue
 
             # we can change prompt
@@ -386,11 +404,14 @@ class MiGPT:
             print("问题：" + query + "？")
             if not self.chatbot.has_history():
                 query = f"{query}，{self.config.prompt}"
+            
             if self.config.mute_xiaoai:
                 await self.stop_if_xiaoai_is_playing()
             else:
                 # waiting for xiaoai speaker done
-                await asyncio.sleep(8)
+                await asyncio.sleep(2)
+            # await self.set_volume_for_xiaoai(40)
+            await asyncio.sleep(2)
             await self.do_tts(f"正在思考中，请耐心等待")
             try:
                 print(
@@ -409,3 +430,4 @@ class MiGPT:
             if self.in_conversation:
                 print(f"继续对话, 或用`{self.config.end_conversation}`结束对话")
                 await self.wakeup_xiaoai()
+            # await self.set_volume_for_xiaoai(40)
