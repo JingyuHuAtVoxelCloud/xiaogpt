@@ -11,6 +11,7 @@ from xiaogpt.bot.qwen_bot import QwenBot
 from xiaogpt.bot.langchain_bot import LangChainBot
 from xiaogpt.bot.light_bot import LightBot
 from xiaogpt.bot.rag_bot import RagBot
+from xiaogpt.bot.chinese_med_bot import ChineseMedBot
 from xiaogpt.config import Config
 
 BOTS: dict[str, type[BaseBot]] = {
@@ -23,7 +24,8 @@ BOTS: dict[str, type[BaseBot]] = {
     "qwen": QwenBot,
     "langchain": LangChainBot,
     "GPT4": LightBot,
-    "RAG": RagBot
+    "RAG": RagBot,
+    "ChineseMed": ChineseMedBot
 }
 
 
@@ -46,4 +48,5 @@ __all__ = [
     "LangChainBot",
     "GPT4",
     "RAG",
+    "ChineseMed"
 ]

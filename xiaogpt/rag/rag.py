@@ -35,34 +35,23 @@ llm = AzureOpenAI(
 # response = llm.complete("你好") 
 # print(response)
 
-embed_model = AzureOpenAIEmbedding(
-    model="text-embedding-ada-002",
-    deployment_name="embedding-ada-002-v2",
-    api_key=api_key,
-    azure_endpoint="http://192.168.12.232:8880",
-    api_version="2023-05-15",
-)
+# embed_model = AzureOpenAIEmbedding(
+#     model="text-embedding-ada-002",
+#     deployment_name="embedding-ada-002-v2",
+#     api_key=api_key,
+#     azure_endpoint="http://192.168.12.232:8880",
+#     api_version="2023-05-15",
+# )
 
-# embed_model = OpenAIEmbedding(
-#     model="text-embedding-ada-002",  
-#     api_key = "voxelcloud",  
-#     api_version = "2023-05-15",
-#     api_base = "http://192.168.12.232:8880"
-#     )
-
-# embeddings = embed_model.get_text_embedding("Hello World!")
-# print(len(embeddings))
-# print(embeddings[:5])
-
-# embed_model = HuggingFaceEmbedding(model_name="/home/jyhu/xiaogpt/rag/bge-large-zh-v1.5")
+embed_model = HuggingFaceEmbedding(model_name="/mnt/nas_ssd_data/jyhu/llm/models/bge-large-zh-v1.5")
 Settings.embed_model = embed_model
 Settings.llm = llm
 
 # check if storage already exists
-PERSIST_DIR = "./storage"
+PERSIST_DIR = "./classic_medicine_data/storage"
 if not os.path.exists(PERSIST_DIR):
     # load the documents and create the index
-    documents = SimpleDirectoryReader("./data").load_data()
+    documents = SimpleDirectoryReader("./classic_medicine_data/data").load_data()
     index = VectorStoreIndex.from_documents(documents)
     # store it for later
     index.storage_context.persist(persist_dir=PERSIST_DIR)
@@ -99,7 +88,11 @@ query_engine = index.as_query_engine(
     )
 
 
-response = query_engine.query("什么是光疗？")
+response = query_engine.query("什么是石斛？")
+print(len(response.source_nodes))
+for i in range(len(response.source_nodes)):
+    print(response.source_nodes[i].get_text())
 
+print('-----------------')
 print(response)
 
